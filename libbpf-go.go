@@ -16,12 +16,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	libbpfgo "github.com/nexusFor/libbpf-go"
-	"math"
 )
 
 func main() {
-	module := libbpfgo.NewModuleFromFile("../main.bpf.o")
+	module := NewModuleFromFile("../main.bpf.o")
 	defer module.Close()
 	module.AddElfFile("/root/main")
 	err := module.LoadAllMap()
@@ -36,10 +34,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	pb := module.NewPerfBuffer("events")
-	for {
-		_ = C.perf_buffer__poll(pb, math.MaxInt32 /* timeout, ms */)
-	}
+	module.NewPerfBuffer("events")
+	module.PerfStart("events")
 }
 
 func perfOutput(cpu int, data []byte) {

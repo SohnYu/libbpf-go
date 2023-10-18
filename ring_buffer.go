@@ -1,4 +1,4 @@
-package libbpfgo
+package main
 
 import "C"
 import (
