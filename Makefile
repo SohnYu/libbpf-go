@@ -10,7 +10,7 @@ build-go:
 		GOOS=linux GOARCH=$(ARCH) \
 		go build \
 		-tags netgo -ldflags  '-w -extldflags "-static"' \
-		-o libbpf-go ./cmd/libbpf-go.go
+		-o libbpf-go .
 
 build-libbpf:
 	CC="gcc" CFLAGS="-g -O2 -Wall -fpie" \
