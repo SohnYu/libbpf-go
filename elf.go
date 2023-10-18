@@ -1,4 +1,4 @@
-package main
+package libbpfgo
 
 import (
 	"debug/elf"

@@ -9,18 +9,19 @@ package main
 //#include <sys/resource.h>
 //#include <sys/syscall.h>
 //#include <unistd.h>
-#include <bpf/libbpf.h> // uapi
+#include <bpf/libbpf.h>
 */
 import "C"
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	libbpfgo "github.com/nexusFor/libbpf-go"
 	"math"
 )
 
 func main() {
-	module := NewModuleFromFile("./main.bpf.o")
+	module := libbpfgo.NewModuleFromFile("../main.bpf.o")
 	defer module.Close()
 	module.AddElfFile("/root/main")
 	err := module.LoadAllMap()
