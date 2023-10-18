@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	module := NewModuleFromFile("../main.bpf.o")
+	module := NewModuleFromFile("./main.bpf.o")
 	defer module.Close()
 	module.AddElfFile("/root/main")
 	err := module.LoadAllMap()
@@ -36,6 +36,7 @@ func main() {
 	}
 	module.NewPerfBuffer("events")
 	module.PerfStart("events")
+	select {}
 }
 
 func perfOutput(cpu int, data []byte) {
