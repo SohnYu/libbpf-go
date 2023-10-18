@@ -311,7 +311,7 @@ func (m *Module) PerfStart(mapName string) {
 				case _ = <-m.bpfPerfEvent[mapName].stopChan:
 					break
 				default:
-					_ = C.perf_buffer__poll(m.bpfPerfEvent[mapName], math.MaxInt32 /* timeout, ms */)
+					_ = C.perf_buffer__poll(m.bpfPerfEvent[mapName].perfBuffer, math.MaxInt32 /* timeout, ms */)
 				}
 			}
 		}()
