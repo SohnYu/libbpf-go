@@ -8,6 +8,7 @@ import "C"
 import (
 	"debug/elf"
 	"fmt"
+	"math"
 	"path"
 	"strconv"
 	"strings"
@@ -157,6 +158,7 @@ func NewModuleFromFile(bpfFilePath string) *Module {
 		bpfProgram:   make(map[string]Program, 0),
 		bpfPinnedMap: make(map[string]*BPFPinnedMap, 0),
 		maps:         make(map[string]*BPFMap, 0),
+		bpfPerfEvent: make(map[string]*PerfEvent, 0),
 	}
 	err := m.BPFLoadObject()
 	if err != nil {
@@ -291,9 +293,37 @@ func (m *Module) NewPerfBuffer(mapName string) *C.struct_perf_buffer {
 	if mapType(bpfMap.bpfMap) != BPF_MAP_TYPE_PERF_EVENT_ARRAY {
 		panic("map type error, need BPF_MAP_TYPE_PERF_EVENT_ARRAY")
 	}
-
 	pb := C.init_perf_buf(bpfMap.fd, C.int(1), nil)
+	m.bpfPerfEvent[mapName] = &PerfEvent{
+		perfBuffer: pb,
+		stopChan:   make(chan struct{}),
+	}
 	return pb
+}
+
+func (m *Module) PerfStart(mapName string) {
+	if _, ok := m.bpfPerfEvent[mapName]; !ok {
+		panic("no such has init perf event")
+	} else {
+		go func() {
+			for {
+				select {
+				case _ = <-m.bpfPerfEvent[mapName].stopChan:
+					break
+				default:
+					_ = C.perf_buffer__poll(m.bpfPerfEvent[mapName], math.MaxInt32 /* timeout, ms */)
+				}
+			}
+		}()
+	}
+}
+
+func (m *Module) PerfStop(mapName string) {
+	if perfEvent, ok := m.bpfPerfEvent[mapName]; !ok {
+		panic("no such has init perf event")
+	} else {
+		perfEvent.stopChan <- struct{}{}
+	}
 }
 
 func (m *Module) GetAllMapName() (res []string) {

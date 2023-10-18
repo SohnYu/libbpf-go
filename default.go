@@ -12,6 +12,7 @@ type Module struct {
 	bpfProgram   map[string]Program
 	maps         map[string]*BPFMap
 	bpfPinnedMap map[string]*BPFPinnedMap
+	bpfPerfEvent map[string]*PerfEvent
 }
 
 type BPFProgram struct {
@@ -83,6 +84,11 @@ type BPFMap struct {
 	bpfMap *C.struct_bpf_map
 	fd     C.int
 	module *Module
+}
+
+type PerfEvent struct {
+	perfBuffer *C.struct_perf_buffer
+	stopChan   chan struct{}
 }
 
 type BPFPinnedMap struct {
