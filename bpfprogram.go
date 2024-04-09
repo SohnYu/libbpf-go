@@ -7,7 +7,9 @@ package main
 import "C"
 import (
 	"debug/elf"
+	"errors"
 	"fmt"
+	"log"
 	"math"
 	"path"
 	"strconv"
@@ -110,6 +112,9 @@ func (t *UProbeProgram) AddOffset(offset string) error {
 func (t *UProbeProgram) AddOffsetByFuncName(funcName string) error {
 	t.offset = symbolOffset(t.module.elf, funcName)
 	t.resolved = true
+	if t.offset == 0 {
+		return errors.New("offset error")
+	}
 	return nil
 }
 
@@ -200,6 +205,9 @@ func (m *Module) LoadAllProgram() error {
 		}
 		programName := C.bpf_program__name(bpfProgram)
 		generationProgram := m.GenerationProgram(bpfProgram)
+		if generationProgram == nil {
+			return nil
+		}
 		m.bpfProgram[C.GoString(programName)] = generationProgram
 	}
 	return nil
@@ -249,17 +257,18 @@ func (m *Module) GenerationProgram(bpfProgram *C.struct_bpf_program) Program {
 			BaseProgram: baseProgram,
 		}
 		res = u
-
+		funcName := strings.Join(secNames[1:], "/")
 		// add by func addr
-		err := u.AddOffset(secNames[1])
+		err := u.AddOffset(funcName)
 		if err == nil {
 			break
 		}
 
 		// add by funcName (addr resolved by elf)
-		err = u.AddOffsetByFuncName(secNames[1])
+		err = u.AddOffsetByFuncName(funcName)
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			return nil
 		}
 
 	case XDP:

@@ -3,6 +3,7 @@ package main
 import (
 	"debug/elf"
 	"fmt"
+	"log"
 )
 
 func symbolOffset(f *elf.File, funcName string) uint32 {
@@ -26,7 +27,6 @@ func symbolOffset(f *elf.File, funcName string) uint32 {
 
 	for i := range f.Sections {
 		if f.Sections[i].Flags == elf.SHF_ALLOC+elf.SHF_EXECINSTR {
-			fmt.Printf("%s\n", f.Sections[i].Name)
 			sectionsToSearchForSymbol = append(sectionsToSearchForSymbol, f.Sections[i])
 		}
 	}
@@ -43,7 +43,8 @@ func symbolOffset(f *elf.File, funcName string) uint32 {
 			}
 
 			if executableSection == nil {
-				panic("could not find symbol in executable sections of binary")
+				log.Println(funcName)
+				return 0
 			}
 
 			return uint32(syms[j].Value - executableSection.Addr + executableSection.Offset)
