@@ -8,14 +8,22 @@
 #define asm_inline asm
 #endif
 #define BPF_F_CURRENT_CPU 0xffffffffULL
-#define GO_PT_REGS_IP(x) ((x)->ip)
-#define GOID_OFFSET 152 // go 1.19
 
-struct func_entry_record
+struct openat_args {
+	unsigned long long pad;
+	int syscall_n;
+	int dfd;
+	const char *filename;
+	int flags;
+	umode_t mode;
+};
+
+struct sys_enter_openat_struct_ret
 {
-    u64 goid;
-    u64 time;
-    uintptr_t func_addr;
+    int dfd;
+    char filename[256];
+    int flags;
+    umode_t mode;
 };
 
 struct {
@@ -24,45 +32,13 @@ struct {
     __uint(value_size, sizeof(u32));
 } events SEC(".maps");
 
-static __always_inline
-        u64 get_goid(struct pt_regs *ctx)
-{
-//    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-//    unsigned long fsbase = 0;
-//    void *g = NULL;
-    u64 goid = 0;
-//    bpf_probe_read(&fsbase, sizeof(fsbase), &task->thread.fsbase);
-//    bpf_probe_read(&g, sizeof(g), (void*)fsbase-8);
-    bpf_probe_read(&goid, sizeof(goid), (void *)(ctx->r14+GOID_OFFSET));
-    return goid;
-}
-
-static __always_inline
-        int process_func_ctx(struct pt_regs *ctx)
-{
-    struct func_entry_record result = {};
-    int goid = get_goid(ctx);
-    uintptr_t func_addr = (uintptr_t)GO_PT_REGS_IP(ctx);
-    u64 ktime = bpf_ktime_get_ns();
-
-    result.goid = goid;
-    result.time = ktime;
-    result.func_addr = func_addr;
-
-    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &result, sizeof(struct func_entry_record));
-    return 1;
-}
-
 char LICENSE[] SEC("license") = "GPL";
 
-SEC("uprobe/main.GoroutineTest")
-int gindemo(struct pt_regs *ctx)
+SEC("tracepoint/syscalls/sys_enter_openat")
+int tracepoint__syscalls__sys_enter_openat(struct trace_event_raw_sys_enter *ctx)
 {
-    return process_func_ctx(ctx);
-}
-
-SEC("uretprobe/3624724")
-int gindemoret(struct pt_regs *ctx)
-{
-    return process_func_ctx(ctx);
+    struct sys_enter_openat_struct_ret ret = {};
+//    bpf_printk("%d----------%s", ctx->dfd, ctx->filename);
+//        bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &result, sizeof(struct func_entry_record));
+    return 0;
 }

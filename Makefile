@@ -24,6 +24,12 @@ build-ebpf:
 	clang -g -O2 -c -target bpf -o main.bpf.o main.bpf.c
 
 gen-vmlinux:
-	./extract-vmlinux /boot/vmlinuz-$(OS_VERSION) > vmlinux
-	bpftool btf dump file ./vmlinux format c > vmlinux.h
+	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
+	if [ $? -eq 0 ]; then
+		echo "vmlinux gen success!"
+	else
+		./extract-vmlinux /boot/vmlinuz-$(OS_VERSION) > vmlinux
+		bpftool btf dump file ./vmlinux format c > vmlinux.h
+	fi
+
 

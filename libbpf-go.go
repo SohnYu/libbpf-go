@@ -12,16 +12,11 @@ package main
 #include <bpf/libbpf.h>
 */
 import "C"
-import (
-	"bytes"
-	"encoding/binary"
-	"fmt"
-)
+import "fmt"
 
 func main() {
 	module := NewModuleFromFile("./main.bpf.o")
 	defer module.Close()
-	module.AddElfFile("/root/main")
 	err := module.LoadAllMap()
 	if err != nil {
 		panic(err)
@@ -40,11 +35,12 @@ func main() {
 }
 
 func perfOutput(cpu int, data []byte) {
-	var a FuncEntryRecord
-	if err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &a); err != nil {
-		panic(err)
-	}
-	fmt.Printf("GOID:%d TIME:%d FuncAddr:%x\n", a.GoId, a.KTime, a.FuncAddr)
+	fmt.Println(string(data))
+	//var a FuncEntryRecord
+	//if err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &a); err != nil {
+	//	panic(err)
+	//}
+	//fmt.Printf("GOID:%d TIME:%d FuncAddr:%x\n", a.GoId, a.KTime, a.FuncAddr)
 }
 
 func ringBufferOutput(data []byte) {
