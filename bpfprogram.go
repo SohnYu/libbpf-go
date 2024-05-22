@@ -247,8 +247,11 @@ func (m *Module) GenerationProgram(bpfProgram *C.struct_bpf_program) Program {
 	case TracePoint:
 		res = &TracePointProgram{
 			BaseProgram: baseProgram,
+			category:    secNames[1],
+			funcName:    secNames[2],
 		}
 	case KProbe:
+		// TODO
 		res = &KprobeProgram{
 			BaseProgram: baseProgram,
 		}
@@ -272,10 +275,12 @@ func (m *Module) GenerationProgram(bpfProgram *C.struct_bpf_program) Program {
 		}
 
 	case XDP:
+		// TODO
 		res = &XDPProgram{
 			BaseProgram: baseProgram,
 		}
 	case TC:
+		// TODO
 		res = &TCProgram{
 			BaseProgram: baseProgram,
 		}
@@ -302,7 +307,7 @@ func (m *Module) NewPerfBuffer(mapName string) *C.struct_perf_buffer {
 	if mapType(bpfMap.bpfMap) != BPF_MAP_TYPE_PERF_EVENT_ARRAY {
 		panic("map type error, need BPF_MAP_TYPE_PERF_EVENT_ARRAY")
 	}
-	pb := C.init_perf_buf(bpfMap.fd, C.int(1), nil)
+	pb := C.init_perf_buf(bpfMap.fd, C.int(1), unsafe.Pointer(&mapName))
 	m.bpfPerfEvent[mapName] = &PerfEvent{
 		perfBuffer: pb,
 		stopChan:   make(chan struct{}),

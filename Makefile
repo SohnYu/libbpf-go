@@ -2,6 +2,14 @@ ROOT_PATH = $(abspath ./)
 LIB_PATH = $(ROOT_PATH)/lib
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
 OS_VERSION := $(shell uname -r)
+CGO_CFLAGS_DYN = "-I. -I/usr/include/"
+CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
+
+build-go-dynamic:
+	CC=clang \
+		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
+		go build .
 
 build-go:
 	CC=clang \
@@ -21,7 +29,7 @@ build-libbpf:
     	INCLUDEDIR= LIBDIR= UAPIDIR= install
 
 build-ebpf:
-	clang -g -O2 -c -target bpf -o main.bpf.o main.bpf.c
+	clang -g -O2 -I$(abspath ./) -c -target bpf -o main.bpf.o main.bpf.c
 
 gen-vmlinux:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h

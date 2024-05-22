@@ -7,12 +7,14 @@ import (
 )
 
 //go:linkname main_perfOutput main.perfOutput
-func main_perfOutput(cpu int, data []byte)
+func main_perfOutput(mapName string, cpu int, data []byte)
 
 //export PerfBufferFunc
 func PerfBufferFunc(ctx unsafe.Pointer, cpu C.int, data unsafe.Pointer, size C.int) {
+	// 将 unsafe.Pointer 转换回 *string
+	strPtr := (*string)(ctx)
 	value := C.GoBytes(data, size)
-	main_perfOutput(int(cpu), value)
+	main_perfOutput(*strPtr, int(cpu), value)
 	//fmt.Printf("cpu %d output: %d\n", int(cpu), binary.LittleEndian.Uint32(value))
 	return
 }

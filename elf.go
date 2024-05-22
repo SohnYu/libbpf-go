@@ -6,6 +6,14 @@ import (
 	"log"
 )
 
+/*
+* readelf
+* readelf -s
+* 序号               地址   大小  类型    绑定类型  可见性 节索引     函数名
+* 7616: 0000000000778200   171 FUNC    GLOBAL DEFAULT    1 main.main
+* 7617: 00000000007782c0   531 FUNC    GLOBAL DEFAULT    1 main.GetRRR
+* 7618: 00000000007784e0   211 FUNC    GLOBAL DEFAULT    1 main.WodeShijie
+ */
 func symbolOffset(f *elf.File, funcName string) uint32 {
 	if f == nil {
 		panic("need init elf file by call ")

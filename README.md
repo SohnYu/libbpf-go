@@ -67,4 +67,25 @@ main.go:27            0x778ea4                e9d7feffff                      JM
 
 **注：**
 1. c结构体无属性，在go中不可直接在栈上分配
-2. 
+
+#### 常用用法
+```c
+bpf_probe_read(&e.prev_comm, sizeof(e.prev_comm), ctx->prev_comm); // 从ctx->prev_comm读取指定长度的字符串到e.prev_comm
+```
+#### BPF_MAP_TYPE_PERF_EVENT_ARRAY 定义
+```c
+struct {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(key_size, sizeof(u32));
+    __uint(value_size, sizeof(u32));
+} events SEC(".maps");
+```
+
+#### UProbe
+```c
+
+```
+#### TracePoint
+```c
+
+```

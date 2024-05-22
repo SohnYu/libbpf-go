@@ -1,29 +1,45 @@
-//+build ignore
-#include "vmlinux.h"
-#include <bpf/bpf_helpers.h>
-#include <bpf/bpf_core_read.h>
-#include <bpf/bpf_tracing.h>
-#ifdef asm_inline
-#undef asm_inline
-#define asm_inline asm
-#endif
-#define BPF_F_CURRENT_CPU 0xffffffffULL
+// SPDX-License-Identifier: GPL-2.0
+// Copyright (c) 2017 Facebook
 
-struct openat_args {
+#include <vmlinux.h>
+#include <bpf/bpf_helpers.h>
+#include "src/common.h"
+#define TASK_COMM_LEN 16
+
+/* taken from /sys/kernel/tracing/events/sched/sched_switch/format */
+struct sched_switch_args {
 	unsigned long long pad;
-	int syscall_n;
-	int dfd;
-	const char *filename;
-	int flags;
-	umode_t mode;
+	char prev_comm[TASK_COMM_LEN];
+	int prev_pid;
+	int prev_prio;
+	long long prev_state;
+	char next_comm[TASK_COMM_LEN];
+	int next_pid;
+	int next_prio;
 };
 
-struct sys_enter_openat_struct_ret
-{
-    int dfd;
-    char filename[256];
-    int flags;
-    umode_t mode;
+struct bind_socket {
+	  unsigned long long pad;
+	  int nr;
+    long fd;
+    struct sockaddr *umyaddr;
+    int addrlen;
+};
+
+struct sys_enter_close {
+	  unsigned long long pad;
+	  int nr;
+    long fd;
+};
+
+struct bind_socket_ret {
+//	  unsigned long long pad;
+//	  int nr;
+//    long fd;
+//    sa_family_t sa_family;
+    char sa_data[14];
+//    int addrlen;
+//    int _pad;
 };
 
 struct {
@@ -32,13 +48,46 @@ struct {
     __uint(value_size, sizeof(u32));
 } events SEC(".maps");
 
-char LICENSE[] SEC("license") = "GPL";
+struct {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(key_size, sizeof(u32));
+    __uint(value_size, sizeof(u32));
+} close_events SEC(".maps");
 
-SEC("tracepoint/syscalls/sys_enter_openat")
-int tracepoint__syscalls__sys_enter_openat(struct trace_event_raw_sys_enter *ctx)
+SEC("tracepoint/syscalls/sys_enter_bind")
+int sys_enter_bind(struct bind_socket *ctx)
 {
-    struct sys_enter_openat_struct_ret ret = {};
-//    bpf_printk("%d----------%s", ctx->dfd, ctx->filename);
-//        bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &result, sizeof(struct func_entry_record));
-    return 0;
+    struct bind_socket_ret e = {};
+//    e.prev_pid = ctx->prev_pid;
+//    e.prev_prio = ctx->prev_prio;
+//    e.prev_state = ctx->prev_state;
+//    e.next_pid = ctx->next_pid;
+//    e.next_prio = ctx->next_prio;
+//    bpf_probe_read(&e.prev_comm, sizeof(e.prev_comm), ctx->prev_comm);
+    bpf_probe_read(&e.sa_data, sizeof(e.sa_data), ctx->umyaddr->sa_data);
+
+    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &e, sizeof(struct bind_socket_ret));
+
+//  bpf_printk("xsk_redirect: %d %s\n", ctx->next_pid, ctx->next_comm);
+	return 0;
 }
+
+SEC("tracepoint/syscalls/sys_enter_close")
+int sys_exit_bind(struct sys_enter_close *ctx)
+{
+    struct sys_enter_close e = {};
+//    e.prev_pid = ctx->prev_pid;
+//    e.prev_prio = ctx->prev_prio;
+//    e.prev_state = ctx->prev_state;
+//    e.next_pid = ctx->next_pid;
+//    e.next_prio = ctx->next_prio;
+//    bpf_probe_read(&e.prev_comm, sizeof(e.prev_comm), ctx->prev_comm);
+//    bpf_probe_read(&e.sa_data, sizeof(e.sa_data), ctx->umyaddr->sa_data);
+    e.fd = ctx->fd;
+    bpf_perf_event_output(ctx, &close_events, BPF_F_CURRENT_CPU, &e, sizeof(struct sys_enter_close));
+
+//  bpf_printk("xsk_redirect: %d %s\n", ctx->next_pid, ctx->next_comm);
+	return 0;
+}
+
+char _license[] SEC("license") = "GPL";
